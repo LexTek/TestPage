@@ -1,1 +1,80 @@
-Hello
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta charset="UTF-8">
+    </head>
+<body>
+<iframe src="https://calendar.google.com/calendar/embed?height=600&amp;wkst=1&amp;bgcolor=%23ffffff&amp;ctz=Europe%2FParis&amp;src=cTMydW1ubDR0c3JmaDZ2ZTcyYmlkczY5YzhAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&amp;src=M3I4OWRnZTgwMWY3azFxNTdzOHY4bm1jYWdAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&amp;src=aG43b282NmdyMzlydGhrb2g1ajQ0YnJkODRAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&amp;color=%234285F4&amp;color=%23E4C441&amp;color=%23795548" style="border:solid 1px #777" width="800" height="600" frameborder="0" scrolling="no"></iframe>
+
+
+<div id="wellness-calendar"></div>
+    
+    </body>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2/moment.min.js"></script>
+<script src="https://apis.google.com/js/api.js"></script>
+<script>
+		/* This solution makes use of "simple access" to google, providing only an API Key.
+		* This way we can only get access to public calendars. To access a private calendar,
+		* we would need to use OAuth 2.0 access.
+		*
+		* "Simple" vs. "Authorized" access: https://developers.google.com/api-client-library/javascript/features/authentication
+		* Examples of "simple" vs OAuth 2.0 access: https://developers.google.com/api-client-library/javascript/samples/samples#authorizing-and-making-authorized-requests
+		*
+		* We will make use of "Option 1: Load the API discovery document, then assemble the request."
+		* as described in https://developers.google.com/api-client-library/javascript/start/start-js
+		*/
+		function printCalendar() {
+
+//var CLIENT_ID = '146708420659-oj5iblp11rb3j7hrt6obm7tka3ia2lsm.apps.googleusercontent.com';
+
+			// The "Calendar ID" from your calendar settings page, "Calendar Integration" secion:
+			var calendarId = '3r89dge801f7k1q57s8v8nmcag@group.calendar.google.com';
+
+			// 1. Create a project using google's wizzard: https://console.developers.google.com/start/api?id=calendar
+			// 2. Create credentials:
+			//    a) Go to https://console.cloud.google.com/apis/credentials
+			//    b) Create Credentials / API key
+			//    c) Since your key will be called from any of your users' browsers, set "Application restrictions" to "None",
+			//       leave "Website restrictions" blank; you may optionally set "API restrictions" to "Google Calendar API"
+			var apiKey = 'AIzaSyAvd-37VS9XwPFMeP5WCVap5qjGpveN22E';
+			// You can get a list of time zones from here: http://www.timezoneconverter.com/cgi-bin/zonehelp
+			var userTimeZone = "Europe/Paris";
+
+			// Initializes the client with the API key and the Translate API.
+			gapi.client.init({
+				'apiKey': apiKey,
+				// Discovery docs docs: https://developers.google.com/api-client-library/javascript/features/discovery
+				'discoveryDocs': ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
+			}).then(function () {
+				// Use Google's "apis-explorer" for research: https://developers.google.com/apis-explorer/#s/calendar/v3/
+				// Events: list API docs: https://developers.google.com/calendar/v3/reference/events/list
+				return gapi.client.calendar.events.list({
+					'calendarId': calendarId,
+					'timeZone': userTimeZone,
+					'singleEvents': true,
+					'timeMin': (new Date()).toISOString(), //gathers only events not happened yet
+					'maxResults': 20,
+					'orderBy': 'startTime'
+				});
+			}).then(function (response) {
+				if (response.result.items) {
+					var calendarRows = ['<table class="wellness-calendar"><tbody>'];
+					response.result.items.forEach(function(entry) {
+						var startsAt = moment(entry.start.dateTime).format("L") + ' ' + moment(entry.start.dateTime).format("LT");
+						var endsAt = moment(entry.end.dateTime).format("LT");
+						calendarRows.push(`<tr><td>${startsAt} - ${endsAt}</td><td>${entry.summary}</td></tr>`);
+					});
+					calendarRows.push('</tbody></table>');
+					$('#wellness-calendar').html(calendarRows.join(""));
+				}
+			}, function (reason) {
+				console.log('Error: ' + reason.result.error.message);
+			});
+		};
+
+		// Loads the JavaScript client library and invokes `start` afterwards.
+		gapi.load('client', printCalendar);
+	</script>
+
+</html>
